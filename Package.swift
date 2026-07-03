@@ -15,13 +15,20 @@ let package = Package(
                 "JchuComponentsExtensions",
                 "JchuComponentsSwiftUI"
             ]
+        ),
+        .library(
+            name: "JchuComponentsPay",
+            targets: ["JchuComponentsPay"]
         )
+    ],
+    dependencies: [
+        .package(url: "https://github.com/RevenueCat/purchases-ios.git", from: "5.77.0")
     ],
     targets: [
         .binaryTarget(
             name: "JchuComponentsCore",
-            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha05/JchuComponentsCore.xcframework.zip",
-            checksum: "d365db0e287ec675868a09c1c81475c4b26e995993e6348f76d9415fb267262b"
+            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha06/JchuComponentsCore.xcframework.zip",
+            checksum: "3b6bf97831caf996e4a91f55286c3f448e963201c6d6b271c68987abf62cf61e"
         ),
         .target(
             name: "JchuComponentsExtensions"
@@ -31,6 +38,12 @@ let package = Package(
             dependencies: [
                 "JchuComponentsCore",
                 "JchuComponentsExtensions"
+            ]
+        ),
+        .target(
+            name: "JchuComponentsPay",
+            dependencies: [
+                .product(name: "RevenueCat", package: "purchases-ios")
             ]
         ),
         .testTarget(
