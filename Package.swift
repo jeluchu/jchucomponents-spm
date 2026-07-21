@@ -5,7 +5,6 @@ import PackageDescription
 let package = Package(
     name: "JchuComponents",
     platforms: [
-        .macOS(.v10_15),
         .iOS("26.0")
     ],
     products: [
@@ -29,8 +28,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "JchuComponentsCore",
-            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha07/JchuComponentsCore.xcframework.zip",
-            checksum: "8230426431e7cea276fb1ae5cbae819c67e3b679cc57d3a00c129699fe731b29"
+            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha08/JchuComponentsCore.xcframework.zip",
+            checksum: "e3aba5df02af63a98bec43cde81c9033f8d425de499846abbce04898ff91df36"
         ),
         .target(
             name: "JchuComponentsExtensions"

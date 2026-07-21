@@ -1,12 +1,14 @@
 import JchuComponentsCore
 import JchuComponentsExtensions
+import JchuComponentsPay
 @testable import JchuComponentsSwiftUI
+import SwiftUI
 import XCTest
 
 final class JchuComponentsSwiftUITests: XCTestCase {
     func testPackageExposesKotlinCoreVersion() {
-        XCTAssertEqual(JchuComponentsInfo.version, "3.0.0-alpha07")
-        XCTAssertEqual(JchuComponents.shared.VERSION, "3.0.0-alpha07")
+        XCTAssertEqual(JchuComponentsInfo.version, "3.0.0-alpha08")
+        XCTAssertEqual(JchuComponents.shared.VERSION, "3.0.0-alpha08")
     }
 
     func testSharedProgressButtonStateUsesExpectedDefaults() {
@@ -31,6 +33,60 @@ final class JchuComponentsSwiftUITests: XCTestCase {
         )
 
         XCTAssertEqual(state.fraction, 1)
+    }
+
+    @MainActor
+    func testProgressViewsExposeNativeSwiftInitializers() {
+        _ = JchuProgressButton("Continue") {}
+        _ = JchuProgressButton(
+            state: JchuProgressButtonState(
+                title: "Continue",
+                isLoading: true,
+                isEnabled: true
+            )
+        ) {}
+        _ = JchuChip("Selected", isSelected: true) {}
+        _ = JchuLoadingIndicator(label: "Loading")
+        _ = JchuLinearProgress("Downloading", value: 45, maxValue: 100)
+        _ = JchuCircularProgress("Preparing", isIndeterminate: true)
+        _ = JchuIconProgress(
+            "Uploading",
+            systemImage: "icloud.and.arrow.up",
+            value: 72,
+            maxValue: 100
+        )
+    }
+
+    @MainActor
+    func testInputViewsExposeControlledAndUncontrolledInitializers() {
+        var query = ""
+        var isExpanded = false
+        var notes = ""
+
+        _ = JchuExpandableSearch(
+            query: Binding(get: { query }, set: { query = $0 }),
+            defaults: SearchBarDefaults(label: "Search")
+        )
+        _ = JchuExpandableSearch(
+            query: Binding(get: { query }, set: { query = $0 }),
+            isExpanded: Binding(
+                get: { isExpanded },
+                set: { isExpanded = $0 }
+            ),
+            defaults: SearchBarDefaults(
+                label: "Search",
+                initiallyExpanded: true
+            )
+        )
+        _ = JchuGrowingTextField(
+            value: Binding(get: { notes }, set: { notes = $0 }),
+            defaults: GrowingTextFieldDefaults(
+                label: "Notes",
+                minLines: 2,
+                maxLines: 4,
+                maxCharacters: 200
+            )
+        )
     }
 
     func testNativeSwiftStringExtensionsCanBeUsedDirectly() {
@@ -99,6 +155,55 @@ final class JchuComponentsSwiftUITests: XCTestCase {
         XCTAssertEqual(values, [1, 2])
     }
 
+    func testNativeSwiftAsyncSequenceLifecycleCallbacks() async {
+        enum FixtureError: Error {
+            case expected
+        }
+
+        var events: [String] = []
+        await AsyncThrowingStream<Int, Error> { continuation in
+            continuation.yield(1)
+            continuation.finish(throwing: FixtureError.expected)
+        }.observe(
+            onStart: {
+                events.append("start")
+            },
+            onEach: { value in
+                events.append("value:\(value)")
+            },
+            onComplete: {
+                events.append("complete")
+            },
+            onFailure: { _ in
+                events.append("failure")
+            }
+        )
+
+        XCTAssertEqual(events, ["start", "value:1", "failure"])
+    }
+
+    func testNativeSwiftTaskPerformRoutesSuccessAndFailure() async {
+        enum FixtureError: Error {
+            case expected
+        }
+
+        let success = Task<Int, Error>.perform(
+            operation: { 42 }
+        )
+        let failure = Task<Int, Error>.perform(
+            operation: { throw FixtureError.expected }
+        )
+
+        let value = try? await success.value
+        XCTAssertEqual(value, 42)
+        do {
+            _ = try await failure.value
+            XCTFail("Expected task failure")
+        } catch {
+            XCTAssertTrue(error is FixtureError)
+        }
+    }
+
     func testNativeSwiftBooleanExtensions() {
         let enabled: Bool? = true
         let disabled: Bool? = false
@@ -124,9 +229,13 @@ final class JchuComponentsSwiftUITests: XCTestCase {
         XCTAssertEqual(Optional<Int64>.none.orEmpty(), 0)
         XCTAssertEqual(Int64(5_242_880).bytesToMegabytes, "5")
         XCTAssertEqual(125_000.millisecondsToTimer, "2:05")
-        XCTAssertEqual(3_725_000.millisecondsToTimer, "1:2:05")
-        XCTAssertEqual(Optional<Int>.none.roundedUpToNearestTen, 10)
+        XCTAssertEqual(3_725_000.millisecondsToTimer, "1:02:05")
+        XCTAssertEqual(Optional<Int>.none.roundedUpToNearestTen, 0)
+        XCTAssertEqual(10.roundedUpToNearestTen, 10)
+        XCTAssertEqual(11.roundedUpToNearestTen, 20)
         XCTAssertEqual(14.roundedUpToNearestTen, 20)
+        XCTAssertEqual((-14).roundedUpToNearestTen, -10)
+        XCTAssertEqual(Int.max.roundedUpToNearestTen, Int.max)
         XCTAssertEqual(1_234_567.thousandsFormatted, "1.234.567")
     }
 
@@ -137,6 +246,12 @@ final class JchuComponentsSwiftUITests: XCTestCase {
 
         XCTAssertEqual(values, [1, 2, 3, 4])
         XCTAssertEqual(["Jchu", "Components", "iOS"].concatenateLowercase(), "jchucomponentsios")
+        XCTAssertTrue(Set([1]).jchu.isNotEmpty)
+        XCTAssertTrue(["name": "Jchu"].jchu.isNotEmpty)
+
+        let metadata = ["name": "Jchu"]
+        XCTAssertEqual(metadata.jchu[safe: metadata.startIndex]?.value, "Jchu")
+        XCTAssertNil(metadata.jchu[safe: metadata.endIndex])
     }
 
     func testNativeSwiftCodableJsonExtensions() {
@@ -208,11 +323,16 @@ final class JchuComponentsSwiftUITests: XCTestCase {
         XCTAssertTrue(isFetchFiveMinutes(lastFetchTime: tenMinutesBefore, now: nowDate))
         XCTAssertFalse(isFetchThirtyMinutes(lastFetchTime: tenMinutesBefore, now: nowDate))
         XCTAssertTrue(isFetchThirtyMinutes(lastFetchTime: oneHourBefore, now: nowDate))
+        let sixDaysBefore = nowDate.timeIntervalSince1970 * 1000 - 6 * 24 * 60 * 60 * 1000
+        let sevenDaysBefore = nowDate.timeIntervalSince1970 * 1000 - 7 * 24 * 60 * 60 * 1000
+        XCTAssertFalse(isFetchSevenDays(lastFetchTime: sixDaysBefore, now: nowDate))
+        XCTAssertTrue(isFetchSevenDays(lastFetchTime: sevenDaysBefore, now: nowDate))
         XCTAssertTrue(isNextDay(lastFetchTime: previousDay, now: nowDate, calendar: calendar))
         XCTAssertTrue(nowDate.isAfterOrEqualThan(numberDaysBeforeToday: 1, now: nowDate, calendar: calendar))
         XCTAssertFalse(nowDate.addDays(-3, calendar: calendar).isAfterOrEqualThan(numberDaysBeforeToday: 1, now: nowDate, calendar: calendar))
         XCTAssertTrue(nowDate.addDays(-3, calendar: calendar).isBeforeThan(numberDaysBeforeToday: 1, now: nowDate, calendar: calendar))
         XCTAssertEqual(65.durationText, "01:05")
+        XCTAssertEqual(3600.durationText, "1:00:00")
         XCTAssertEqual(3665.durationText, "1:01:05")
     }
 
@@ -243,9 +363,204 @@ final class JchuComponentsSwiftUITests: XCTestCase {
         XCTAssertEqual(theme.shapes.corner100, 100)
     }
 
+    @MainActor
+    func testSwiftUIThemeExposesStableDefaultsAndModifier() {
+        let theme = JchuTheme.standard
+
+        XCTAssertEqual(theme.spacing.dimen16, 16)
+        XCTAssertEqual(theme.spacing.dimen24, 24)
+        XCTAssertEqual(theme.shapes.corner16, 16)
+        XCTAssertEqual(theme.shapes.corner999, 999)
+        XCTAssertEqual(theme.motion.durationShort, 0.15)
+        XCTAssertEqual(theme.motion.durationMedium, 0.25)
+        XCTAssertEqual(theme.motion.durationLong, 0.4)
+
+        _ = EmptyView().jchuTheme(theme)
+    }
+
+    @MainActor
     func testNetworkImageCanBeCreatedFromStringURL() {
-        let view = JchuNetworkImage(urlString: "https://example.com/image.jpg")
+        let configuration = JchuNetworkImageConfiguration.galleryThumbnail(
+            size: CGSize(width: 160, height: 90),
+            cornerRadius: 14
+        )
+        let view = JchuNetworkImage(
+            urlString: "https://example.com/image.jpg",
+            configuration: configuration
+        )
 
         XCTAssertNotNil(view)
+        XCTAssertEqual(configuration.contentMode, .fill)
+        XCTAssertEqual(configuration.cornerRadius, 14)
+        XCTAssertEqual(configuration.targetSize, CGSize(width: 160, height: 90))
+        XCTAssertEqual(configuration.retryCount, 2)
+
+        _ = JchuNetworkImagePlaceholder()
+        _ = JchuNetworkImageErrorView()
+    }
+
+    @MainActor
+    func testNetworkImagePrefetcherAcceptsEmptyInputs() {
+        let prefetcher = JchuNetworkImagePrefetcher()
+
+        prefetcher.prefetch(urls: [])
+        prefetcher.prefetch(urlStrings: ["not a URL"])
+        prefetcher.stop()
+    }
+
+    @MainActor
+    func testUIImageResizePreservesAspectRatio() {
+        let image = UIGraphicsImageRenderer(
+            size: CGSize(width: 200, height: 100)
+        ).image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 200, height: 100))
+        }
+
+        let resized = image.resizedToFit(maxDimension: 50)
+
+        XCTAssertEqual(resized.size.width, 50, accuracy: 0.01)
+        XCTAssertEqual(resized.size.height, 25, accuracy: 0.01)
+        XCTAssertNotNil(
+            resized.optimizedJPEG(
+                maxDimension: 50,
+                maximumByteCount: 50_000
+            )
+        )
+    }
+
+    @MainActor
+    func testGeneralScaffoldsExposeConvenienceInitializers() {
+        _ = JchuScaffold {
+            Text("Content")
+        }
+        _ = JchuScrollableScaffold("Library") {
+            Text("Scrollable content")
+        }
+        _ = JchuStateScaffold(
+            "Library",
+            isLoading: false,
+            isEmpty: false
+        ) {
+            Text("Loaded")
+        }
+        _ = JchuSettingsScaffold("Settings") {
+            Text("Preferences")
+        }
+        _ = JchuDetailsScaffold("Details", details: "Loaded") { value in
+            Text(value)
+        }
+        _ = JchuRemoteScreenContent(
+            data: "Loaded",
+            isLoading: false,
+            error: nil
+        ) {
+            ProgressView()
+        } successContent: { value in
+            Text(value)
+        } failureContent: { error in
+            Text(error ?? "Error")
+        }
+    }
+
+    @MainActor
+    func testPaymentModelsExposeNativeInitializers() {
+        let info = JchuSubscriptionInfo(
+            renewalType: .yearly,
+            expireDate: "05/07/2027",
+            promotional: false,
+            state: .active,
+            managementUrl: "https://apps.apple.com/account/subscriptions"
+        )
+        let billing = JchuBillingInfo(
+            info: info,
+            packages: [],
+            products: []
+        )
+
+        XCTAssertEqual(info.renewalType, .yearly)
+        XCTAssertEqual(info.state, .active)
+        XCTAssertEqual(billing.info, info)
+        XCTAssertTrue(billing.packages.isEmpty)
+        XCTAssertTrue(billing.products.isEmpty)
+        XCTAssertEqual(JchuSubscriptionInfo.empty.state, .none)
+        XCTAssertTrue(JchuBillingInfo.empty.products.isEmpty)
+
+        JchuPayment.shared.setSubscriptionName("premium")
+        XCTAssertEqual(JchuPayment.shared.subscriptionName, "premium")
+    }
+
+    @MainActor
+    func testPurchaseAndShareScaffoldsExposeConveniences() {
+        struct Item: Identifiable {
+            let id: Int
+            let title: String
+        }
+
+        let items = [Item(id: 1, title: "Annual")]
+        var selectedTab = "plans"
+
+        _ = JchuPurchaseElementsScaffold(
+            "Products",
+            items: items,
+            isLoading: false,
+            id: \.id
+        ) { layout, item in
+            Text("\(String(describing: layout)): \(item.title)")
+        }
+        _ = JchuPurchaseTabItemsScaffold(
+            "Products",
+            tabs: [
+                JchuScaffoldTabItem(
+                    id: "plans",
+                    title: "Plans",
+                    systemImage: "creditcard"
+                )
+            ],
+            selectedTabID: Binding(
+                get: { selectedTab },
+                set: { selectedTab = $0 }
+            ),
+            isLoading: false
+        ) {
+            Text("Plans")
+        }
+        _ = JchuShareScaffold(
+            "Preview",
+            onShare: {},
+            onDownload: {}
+        ) {
+            Text("Preview")
+        }
+
+        let theme = JchuScreenColorTheme(
+            primary: .blue,
+            secondary: .white
+        )
+        XCTAssertTrue(theme.toPurchaseScaffoldConfig().searchConfig.isActive)
+        XCTAssertTrue(theme.toPurchaseTabScaffoldConfig().searchConfig.isActive)
+        _ = theme.toShareScaffoldConfig()
+    }
+
+    @MainActor
+    func testSwiftUIViewExtensionsComposeWithoutTypeErasureLeaks() {
+        let view = Text("JchuComponents")
+            .if(true) { $0.bold() }
+            .if(false, transform: { $0.hidden() }, else: { $0 })
+            .placeholder("Loading", when: false)
+            .cornerRadius(12, corners: [.topLeft, .bottomRight])
+            .roundBackground(corner: 12, color: .blue.opacity(0.1))
+            .roundStrokeBackground(corner: 12, color: .blue)
+            .roundWithStrokeBackground(
+                corner: 12,
+                container: .clear,
+                stroke: .blue
+            )
+            .alignment(JchuFrameAlignment.leading)
+
+        _ = view.eraseToAnyView()
+        _ = JchuRoundedCorner(radius: 12, corners: .allCorners)
+        XCTAssertEqual(view.getSafeAreaTop(), view.getSafeArea().top)
+        XCTAssertEqual(view.getSafeAreaBottom(), view.getSafeArea().bottom)
     }
 }
