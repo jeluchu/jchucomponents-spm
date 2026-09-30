@@ -1,5 +1,6 @@
 // swift-tools-version: 6.1
 
+import CompilerPluginSupport
 import PackageDescription
 
 let package = Package(
@@ -13,8 +14,17 @@ let package = Package(
             targets: [
                 "JchuComponentsCore",
                 "JchuComponentsExtensions",
-                "JchuComponentsSwiftUI"
+                "JchuComponentsSwiftUI",
+                "JchuComponentsNavigation"
             ]
+        ),
+        .library(
+            name: "JchuComponentsNavigation",
+            targets: ["JchuComponentsNavigation"]
+        ),
+        .plugin(
+            name: "JchuComponentsNavigationGraphPlugin",
+            targets: ["JchuComponentsNavigationGraphPlugin"]
         ),
         .library(
             name: "JchuComponentsPay",
@@ -23,16 +33,43 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
-        .package(url: "https://github.com/RevenueCat/purchases-ios.git", from: "5.77.0")
+        .package(url: "https://github.com/RevenueCat/purchases-ios.git", from: "5.77.0"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "603.0.2")
     ],
     targets: [
         .binaryTarget(
             name: "JchuComponentsCore",
-            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha13/JchuComponentsCore.xcframework.zip",
-            checksum: "7be302899506a9a0c025655c0c2d010dfc2b53d4956ba9111fc345a273655525"
+            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha14/JchuComponentsCore.xcframework.zip",
+            checksum: "43b8ba0b1a21de4bff4eea80de3963f93f9b776407a18d2666976a6c03735ce5"
         ),
         .target(
             name: "JchuComponentsExtensions"
+        ),
+        .macro(
+            name: "JchuComponentsNavigationMacros",
+            dependencies: [
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftDiagnostics", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax")
+            ]
+        ),
+        .target(
+            name: "JchuComponentsNavigation",
+            dependencies: ["JchuComponentsNavigationMacros"]
+        ),
+        .executableTarget(
+            name: "JchuComponentsNavigationGraphGenerator",
+            dependencies: [
+                .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax")
+            ]
+        ),
+        .plugin(
+            name: "JchuComponentsNavigationGraphPlugin",
+            capability: .buildTool(),
+            dependencies: ["JchuComponentsNavigationGraphGenerator"]
         ),
         .target(
             name: "JchuComponentsSwiftUI",
