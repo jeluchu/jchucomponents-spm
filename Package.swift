@@ -3,6 +3,12 @@
 import CompilerPluginSupport
 import PackageDescription
 
+#if compiler(>=6.4)
+let swiftSyntaxDependency = Package.Dependency.package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0")
+#else
+let swiftSyntaxDependency = Package.Dependency.package(url: "https://github.com/swiftlang/swift-syntax.git", from: "603.0.2")
+#endif
+
 let package = Package(
     name: "JchuComponents",
     platforms: [
@@ -34,13 +40,13 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
         .package(url: "https://github.com/RevenueCat/purchases-ios.git", from: "5.77.0"),
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "603.0.2")
+        swiftSyntaxDependency
     ],
     targets: [
         .binaryTarget(
             name: "JchuComponentsCore",
-            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha16/JchuComponentsCore.xcframework.zip",
-            checksum: "f2f59c1cfc6d47b625edaf99ac3a96b2c0dc6723442975b7533012949c08a487"
+            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha17/JchuComponentsCore.xcframework.zip",
+            checksum: "ca8baad8d593382dfd61c7eb9f5aa042371e781a0b20ce90050c804b2e660357"
         ),
         .target(
             name: "JchuComponentsExtensions"
