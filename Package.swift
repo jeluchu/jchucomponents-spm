@@ -12,7 +12,8 @@ let swiftSyntaxDependency = Package.Dependency.package(url: "https://github.com/
 let package = Package(
     name: "JchuComponents",
     platforms: [
-        .iOS("26.0")
+        .iOS("26.0"),
+        .macOS("10.15")
     ],
     products: [
         .library(
@@ -45,8 +46,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "JchuComponentsCore",
-            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha17/JchuComponentsCore.xcframework.zip",
-            checksum: "ca8baad8d593382dfd61c7eb9f5aa042371e781a0b20ce90050c804b2e660357"
+            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha18/JchuComponentsCore.xcframework.zip",
+            checksum: "28072b9ca5f257392b416108c1043311144ba4d3c1db43d0bc6efa3f52cb6a31"
         ),
         .target(
             name: "JchuComponentsExtensions"
