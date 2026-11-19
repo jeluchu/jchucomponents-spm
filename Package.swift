@@ -46,8 +46,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "JchuComponentsCore",
-            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha32/JchuComponentsCore.xcframework.zip",
-            checksum: "f6f1c672956dc2e78393278403b7b08b4aae23d0d3f3b647bd3a30ca2c744f9c"
+            url: "https://github.com/Jeluchu/jchucomponents/releases/download/3.0.0-alpha33/JchuComponentsCore.xcframework.zip",
+            checksum: "b24a6ba61915a3f22d7e3570a6ef255cdc86c286a5603619b359d427ff0aff6b"
         ),
         .target(
             name: "JchuComponentsExtensions"
